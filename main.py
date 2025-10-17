@@ -11,18 +11,18 @@ TOKEN = os.getenv("WHATSAPP_TOKEN")
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 CALLBACK_URL = os.getenv("CALLBACK_URL")
 
-APP_ID = os.getenv("META_APP_ID")
-APP_SECRET = os.getenv("META_APP_SECRET")
-
 app = FastAPI()
 
 wa = WhatsApp(
     phone_id=PHONE_ID,
     token=TOKEN,
     server=app,
-    # verify_token=VERIFY_TOKEN,
-    # callback_url=CALLBACK_URL,   # will auto-register this URL
-    app_id=APP_ID,               # <-- required for auto-register
-    app_secret=APP_SECRET,       # <-- required for auto-register & signature validation
-    # validate_updates=True,     # default is True; good to keep
+    verify_token=VERIFY_TOKEN,
+    # leave callback_url in .env for later, but don't auto-register yet
+    register_callbacks=False,   # <— key line
+    validate_updates=False      # optional: silence signature warnings until app_secret is added
 )
+
+@app.get("/")
+def root():
+    return {"status": "✅ PyWa WhatsApp FastAPI server is running!"}
