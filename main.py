@@ -168,13 +168,35 @@ def on_message(client: WhatsApp, message):
     except Exception:
         log.exception("on_message failed")
 
-@wa.on_status()
-def on_status(client: WhatsApp, status):
-    try:
-        statuses_buffer.appendleft(strip_status(status))
-        log.info("Status update: %s", getattr(status, "status", "unknown"))
-    except Exception:
-        log.exception("on_status failed")
+# ────────────────────────────────
+# Status listener (PyWa version compatible)
+# ────────────────────────────────
+_status_decorator = None
+if hasattr(wa, "on_status"):
+    _status_decorator = wa.on_status()                 # some versions
+elif hasattr(wa, "on_message_status"):
+    _status_decorator = wa.on_message_status()         # other versions
+elif hasattr(wa, "on_statuses"):
+    _status_decorator = wa.on_statuses()               # rare naming
+
+if _status_decorator:
+    @_status_decorator
+    def _status_cb(*args, **kwargs):
+        try:
+            # Try to pull the status object from common call patterns
+            s = kwargs.get("status")
+            if s is None and len(args) >= 2:
+                s = args[1]  # (client, status)
+            if s is not None:
+                statuses_buffer.appendleft(strip_status(s))
+                log.info("Status update: %s", getattr(s, "status", "unknown"))
+        except Exception:
+            log.exception("status callback failed")
+else:
+    log.warning(
+        "No status listener decorator found on this pywa version. "
+        "Skipping status tracking."
+    )
 
 # ────────────────────────────────
 # API models
