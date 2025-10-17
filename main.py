@@ -1,16 +1,22 @@
+# main.py
 import os
 import logging
 from collections import deque
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+
 from pywa import WhatsApp
 
-# ── Env & logging ──────────────────────────────────────────────────────────────
+# ────────────────────────────────
+# Env & logging
+# ────────────────────────────────
 load_dotenv()
+
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -20,20 +26,26 @@ log = logging.getLogger("whatspy")
 PHONE_ID: str = os.getenv("WHATSAPP_PHONE_ID", "")
 TOKEN: str = os.getenv("WHATSAPP_TOKEN", "")
 VERIFY_TOKEN: str = os.getenv("VERIFY_TOKEN", "")
-CALLBACK_URL: str = os.getenv("CALLBACK_URL", "https://whatsapp.example.com/webhook")
+CALLBACK_URL: str = os.getenv("CALLBACK_URL", "")  # e.g. https://whatsapp.example.com/webhook
 APP_ID: Optional[str] = os.getenv("FB_APP_ID")
 APP_SECRET: Optional[str] = os.getenv("FB_APP_SECRET")
-WEBHOOK_DELAY: float = float(os.getenv("WEBHOOK_CHALLENGE_DELAY", "0.0"))
+WEBHOOK_DELAY: float = float(os.getenv("WEBHOOK_CHALLENGE_DELAY", "0"))
+VALIDATE_UPDATES: bool = os.getenv("VALIDATE_UPDATES", "true").lower() not in ("0", "false", "no")
+
 MAX_BUFFER = int(os.getenv("MESSAGE_BUFFER", "200"))
+templates = Jinja2Templates(directory="templates")
 
 if not PHONE_ID or not TOKEN or not VERIFY_TOKEN:
     log.warning("Missing one of WHATSAPP_PHONE_ID / WHATSAPP_TOKEN / VERIFY_TOKEN")
 
-# ── App & Templates ───────────────────────────────────────────────────────────
-app = FastAPI(title="Whatspy (PyWa + FastAPI)", version="1.0.0")
-templates = Jinja2Templates(directory="templates")
+# ────────────────────────────────
+# FastAPI app
+# ────────────────────────────────
+app = FastAPI(title="Whatspy (PyWa + FastAPI)", version="1.1.0")
 
-# ── In-memory stores for quick observability ──────────────────────────────────
+# ────────────────────────────────
+# In-memory buffers (simple observability)
+# ────────────────────────────────
 messages_buffer: deque = deque(maxlen=MAX_BUFFER)
 statuses_buffer: deque = deque(maxlen=MAX_BUFFER)
 
@@ -56,21 +68,43 @@ def strip_status(s) -> Dict[str, Any]:
         "timestamp": getattr(s, "timestamp", None),
     }
 
-# ── PyWa client (mounts webhook routes on FastAPI) ────────────────────────────
+# ────────────────────────────────
+# Build robust WhatsApp client kwargs
+# ────────────────────────────────
 wa_kwargs: Dict[str, Any] = dict(
     phone_id=PHONE_ID,
     token=TOKEN,
-    server=app,                      # attach FastAPI app
-    verify_token=VERIFY_TOKEN,       # webhook verification
-    callback_url=CALLBACK_URL,       # must be public HTTPS in Meta
+    server=app,  # mount webhook routes on this FastAPI app
+    verify_token=VERIFY_TOKEN,
     webhook_challenge_delay=WEBHOOK_DELAY,
 )
-if APP_ID and APP_SECRET:
-    wa_kwargs.update(app_id=APP_ID, app_secret=APP_SECRET)
 
+# Validation is recommended; you can disable if you don't have APP_SECRET
+if not VALIDATE_UPDATES:
+    wa_kwargs["validate_updates"] = False
+elif APP_SECRET:
+    # When provided, pywa can validate `X-Hub-Signature-256`
+    wa_kwargs["app_secret"] = APP_SECRET
+else:
+    # Keep running, but warn (pywa also warns). You can set VALIDATE_UPDATES=false to hide warning.
+    log.warning("No FB_APP_SECRET provided; signature validation disabled. Set VALIDATE_UPDATES=false to suppress warning.")
+
+# Only include callback_url if BOTH app creds exist (prevents crash)
+if APP_ID and APP_SECRET and CALLBACK_URL:
+    wa_kwargs.update(app_id=APP_ID, app_secret=APP_SECRET, callback_url=CALLBACK_URL)
+elif CALLBACK_URL:
+    log.warning(
+        "CALLBACK_URL is set but FB_APP_ID/FB_APP_SECRET missing; "
+        "skipping auto-registration to avoid crash. "
+        "Set webhook manually in Meta App Dashboard or provide both creds."
+    )
+
+# Create WA client (safe — won't raise for missing app creds now)
 wa = WhatsApp(**wa_kwargs)
 
-# ── Bot listeners ─────────────────────────────────────────────────────────────
+# ────────────────────────────────
+# Bot listeners
+# ────────────────────────────────
 @wa.on_message()
 def on_message(client: WhatsApp, message):
     try:
@@ -80,47 +114,56 @@ def on_message(client: WhatsApp, message):
         if not text:
             return message.reply_text("I only understand text for now 🙂")
 
-        if text.lower() in {"hi", "hello", "hey"}:
+        low = text.lower()
+        if low in {"hi", "hello", "hey"}:
             return message.reply_text(
                 "👋 Hey! Try:\n"
                 "• /help – show commands\n"
                 "• /echo <text> – I’ll repeat it\n"
-                "• /flow – send a sample Flow (needs FLOW_ID)\n"
+                "• /flow – send a sample Flow (if enabled)\n"
             )
 
-        if text.startswith("/help"):
+        if low.startswith("/help"):
             return message.reply_text(
                 "🧰 Commands:\n"
                 "• /help – show this\n"
                 "• /echo <text>\n"
-                "• /flow – send a sample Flow (needs FLOW_ID)\n"
+                "• /flow – send a sample Flow (requires FLOW_ID / FLOW_TOKEN)\n"
             )
 
-        if text.startswith("/echo"):
+        if low.startswith("/echo"):
             parts = text.split(" ", 1)
             return message.reply_text(parts[1] if len(parts) > 1 else "(nothing to echo)")
 
-        if text.startswith("/flow"):
+        if low.startswith("/flow"):
             flow_id = os.getenv("FLOW_ID")
+            flow_token = os.getenv("FLOW_TOKEN")
             flow_cta = os.getenv("FLOW_CTA", "Open")
+            flow_action = os.getenv("FLOW_ACTION", "navigate")
+            flow_screen = os.getenv("FLOW_SCREEN", None)
+
             if not flow_id:
                 return message.reply_text("No FLOW_ID configured on server.")
+
             try:
-                client.send_flow(
+                msg_id = client.send_flow(
                     to=message.from_user,
                     flow_id=flow_id,
-                    flow_token=os.getenv("FLOW_TOKEN", None),
+                    flow_token=flow_token,
                     flow_cta=flow_cta,
-                    flow_action="navigate",
-                    screen=os.getenv("FLOW_SCREEN", None),
+                    flow_action=flow_action,
+                    screen=flow_screen,
                 )
-                return
-            except Exception:
-                log.exception("Flow send failed")
+                return  # success; no need to reply
+            except AttributeError:
                 return message.reply_text(
-                    "Flow sending not available. Ensure your PyWa version & Meta app support Flows."
+                    "Your pywa version may not support send_flow(). Upgrade pywa and ensure Flows are enabled in Meta."
                 )
+            except Exception as e:
+                log.exception("Flow send failed")
+                return message.reply_text(f"Flow send failed: {e}")
 
+        # default echo
         return message.reply_text("Echo: " + text)
     except Exception:
         log.exception("on_message failed")
@@ -129,11 +172,13 @@ def on_message(client: WhatsApp, message):
 def on_status(client: WhatsApp, status):
     try:
         statuses_buffer.appendleft(strip_status(status))
-        log.info("Status: %s", getattr(status, "status", "unknown"))
+        log.info("Status update: %s", getattr(status, "status", "unknown"))
     except Exception:
         log.exception("on_status failed")
 
-# ── API models ────────────────────────────────────────────────────────────────
+# ────────────────────────────────
+# API models
+# ────────────────────────────────
 class SendTextIn(BaseModel):
     to: str = Field(..., description="WhatsApp phone in international format (no +), e.g., 15551234567")
     text: str = Field(..., min_length=1, max_length=4096)
@@ -146,12 +191,20 @@ class FlowSendIn(BaseModel):
     flow_action: Optional[str] = "navigate"
     screen: Optional[str] = None
 
-# ── HTTP endpoints ────────────────────────────────────────────────────────────
+# ────────────────────────────────
+# HTTP endpoints
+# ────────────────────────────────
 @app.get("/healthz", summary="Health")
 def health() -> Dict[str, Any]:
-    return {"status": "ok", "phone_id": PHONE_ID, "webhook": CALLBACK_URL, "buffer_size": MAX_BUFFER}
+    return {
+        "status": "ok",
+        "phone_id_ok": bool(PHONE_ID),
+        "token_ok": bool(TOKEN),
+        "verify_token_ok": bool(VERIFY_TOKEN),
+        "callback_url_registered": bool(APP_ID and APP_SECRET and CALLBACK_URL),
+        "buffer_size": MAX_BUFFER,
+    }
 
-@app.get("/", include_in_schema=False)
 @app.get("/dashboard", include_in_schema=False)
 def dashboard(request: Request):
     return templates.TemplateResponse(
@@ -159,24 +212,33 @@ def dashboard(request: Request):
         {
             "request": request,
             "phone_id": PHONE_ID,
-            "webhook": CALLBACK_URL,
+            "webhook": CALLBACK_URL or "(not set or not auto-registered)",
             "verify_token": VERIFY_TOKEN,
             "buffer_size": MAX_BUFFER,
             "messages": list(messages_buffer)[:10],
             "statuses": list(statuses_buffer)[:10],
             "endpoints": [
-                "/send/text",
-                "/send/flow",
-                "/messages",
-                "/statuses",
-                "/docs",
-                "/redoc",
-                "/healthz",
+                "GET  /healthz",
+                "GET  /dashboard",
+                "POST /send/text",
+                "POST /send/flow  (if supported)",
+                "GET  /messages",
+                "GET  /statuses",
+                "GET  /docs",
+                "GET  /redoc",
             ],
         },
     )
 
-@app.post("/send/text", summary="Send a text message")
+# Keep JSON index lightweight but helpful
+@app.get("/", include_in_schema=False)
+def index() -> Dict[str, Any]:
+    return {
+        "ok": True,
+        "see": ["/healthz", "/dashboard", "/docs"],
+    }
+
+@app.post("/send/text", response_model=Dict[str, Any], summary="Send a text message")
 def send_text(payload: SendTextIn):
     try:
         msg_id = wa.send_text(to=payload.to, text=payload.text)
@@ -185,7 +247,7 @@ def send_text(payload: SendTextIn):
         log.exception("send_text failed")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/send/flow", summary="Send a Flow (if supported)")
+@app.post("/send/flow", response_model=Dict[str, Any], summary="Send a Flow (if supported)")
 def send_flow(payload: FlowSendIn):
     try:
         msg_id = wa.send_flow(
@@ -200,7 +262,7 @@ def send_flow(payload: FlowSendIn):
     except AttributeError:
         raise HTTPException(
             status_code=400,
-            detail="This PyWa version does not support send_flow(). Upgrade pywa and enable Flows.",
+            detail="This pywa version does not support send_flow(). Upgrade pywa and ensure Flows are enabled."
         )
     except Exception as e:
         log.exception("send_flow failed")
