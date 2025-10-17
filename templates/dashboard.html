@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Whatspy Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        code { background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
+        .section { margin-bottom: 25px; }
+        .card { padding:10px; background:#fafafa; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; }
+    </style>
+</head>
+<body>
+    <h1>📡 Whatspy Dashboard</h1>
+
+    <div class="section">
+        <h2>🔧 Configuration</h2>
+        <div class="card">
+            <p><b>Phone ID:</b> {{ phone_id }}</p>
+            <p><b>Webhook:</b> <code>{{ webhook }}</code></p>
+            <p><b>Verify Token:</b> <code>{{ verify_token }}</code></p>
+            <p><b>Buffer Size:</b> {{ buffer_size }}</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔌 API Endpoints</h2>
+        <ul>
+            {% for ep in endpoints %}
+                <li><code>{{ ep }}</code></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📨 Recent Messages</h2>
+        {% for msg in messages %}
+            <div class="card">
+                <b>From:</b> {{ msg.from }}<br>
+                <b>Text:</b> {{ msg.text }}<br>
+                <b>Time:</b> {{ msg.timestamp }}
+            </div>
+        {% endfor %}
+        {% if not messages %}<p>No messages yet.</p>{% endif %}
+    </div>
+
+    <div class="section">
+        <h2>📊 Status Updates</h2>
+        {% for st in statuses %}
+            <div class="card">
+                <b>Message ID:</b> {{ st.message_id }}<br>
+                <b>Status:</b> {{ st.status }}<br>
+                <b>Recipient:</b> {{ st.recipient }}
+            </div>
+        {% endfor %}
+        {% if not statuses %}<p>No status logs yet.</p>{% endif %}
+    </div>
+
+    <p>✅ Running on <code>whatsapp.dglinkup.com</code></p>
+</body>
+</html>
