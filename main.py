@@ -1,13 +1,25 @@
 # main.py
 import os
 import logging
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
 from pywa import WhatsApp
-from dotenv import load_dotenv
+
+# ────────────────────────────────
+# Load environment variables FIRST
+# ────────────────────────────────
+# Get the directory where main.py is located
+BASE_DIR = Path(__file__).resolve().parent
+
+# Load .env from the same directory as main.py
+env_path = BASE_DIR / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Now import config (after .env is loaded)
 from routers import chat, campaigns, templates
 from config import (
     PHONE_ID, TOKEN, VERIFY_TOKEN, CALLBACK_URL,
@@ -16,19 +28,8 @@ from config import (
 )
 
 # ────────────────────────────────
-# Env & logging
+# Logging setup
 # ────────────────────────────────
-
-
-
-
-# Get the directory where main.py is located
-BASE_DIR = Path(__file__).resolve().parent
-
-# Load .env from the same directory as main.py
-env_path = BASE_DIR / '.env'
-load_dotenv(dotenv_path=env_path)
-
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",

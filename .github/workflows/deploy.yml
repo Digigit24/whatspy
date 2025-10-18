@@ -2,7 +2,7 @@ name: Deploy Whatspy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -10,20 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (for completeness; not actually used server-side)
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Run deploy.sh on server
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          port: ${{ secrets.SSH_PORT || '22' }}   # or hardcode '22'
+          key: ${{ secrets.SSH_KEY }}             # <-- pass the PRIVATE key here
+          # If your key has a passphrase:
+          # passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script_stop: true
           script: |
             set -e
             cd /home/ubuntu/whatspy
