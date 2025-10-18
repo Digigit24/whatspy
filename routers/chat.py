@@ -33,6 +33,15 @@ def init_wa_client(client):
     @wa_client.on_message()
     def on_message(client, message):
         try:
+            # Log webhook activity
+            webhook_logs.appendleft({
+                "type": "message",
+                "timestamp": datetime.now().isoformat(),
+                "from": getattr(message, "from_user", "unknown"),
+                "message_id": getattr(message, "id", None),
+                "text": getattr(message, "text", None)[:100] if getattr(message, "text", None) else None
+            })
+            
             msg_data = strip_message(message)
             messages_buffer.appendleft(msg_data)
             
@@ -41,62 +50,99 @@ def init_wa_client(client):
             if phone:
                 if phone not in conversations:
                     conversations[phone] = []
-                conversations[phone].append({
-                    **msg_data,
+                
+                msg_entry = {
+                    "id": msg_data.get("id"),
+                    "from": phone,
+                    "name": msg_data.get("name") or phone,
+                    "text": msg_data.get("text"),
+                    "type": msg_data.get("type"),
                     "direction": "incoming",
                     "timestamp": datetime.now().isoformat()
-                })
+                }
+                conversations[phone].append(msg_entry)
+                log.info(f"Message stored for {phone}: {msg_data.get('text', '')[:50]}")
             
             # Auto-reply logic
             text = (message.text or "").strip()
             if not text:
-                return message.reply_text("I only understand text for now 🙂")
+                reply_msg = message.reply_text("I only understand text for now 🙂")
+                # Store bot reply
+                if phone and phone in conversations:
+                    conversations[phone].append({
+                        "id": getattr(reply_msg, "id", None) if reply_msg else None,
+                        "from": "bot",
+                        "to": phone,
+                        "text": "I only understand text for now 🙂",
+                        "direction": "outgoing",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                return
             
             low = text.lower()
+            reply_text = None
+            
             if low in {"hi", "hello", "hey"}:
-                return message.reply_text(
+                reply_text = (
                     "👋 Hey! Try:\n"
                     "• /help – show commands\n"
                     "• /echo <text> – I'll repeat it\n"
                     "• /flow – send a sample Flow (if enabled)"
                 )
-            
-            if low.startswith("/help"):
-                return message.reply_text(
+            elif low.startswith("/help"):
+                reply_text = (
                     "🧰 Commands:\n"
                     "• /help – show this\n"
                     "• /echo <text>\n"
                     "• /flow – send a sample Flow"
                 )
-            
-            if low.startswith("/echo"):
+            elif low.startswith("/echo"):
                 parts = text.split(" ", 1)
-                return message.reply_text(parts[1] if len(parts) > 1 else "(nothing to echo)")
-            
-            if low.startswith("/flow"):
+                reply_text = parts[1] if len(parts) > 1 else "(nothing to echo)"
+            elif low.startswith("/flow"):
                 if not FLOW_ID:
-                    return message.reply_text("No FLOW_ID configured on server.")
-                
-                try:
-                    client.send_flow(
-                        to=message.from_user,
-                        flow_id=FLOW_ID,
-                        flow_token=FLOW_TOKEN,
-                        flow_cta=FLOW_CTA,
-                        flow_action=FLOW_ACTION,
-                        screen=FLOW_SCREEN,
-                    )
-                    return
-                except AttributeError:
-                    return message.reply_text("Flow not supported in this PyWa version.")
-                except Exception as e:
-                    log.exception("Flow send failed")
-                    return message.reply_text(f"Flow send failed: {e}")
+                    reply_text = "No FLOW_ID configured on server."
+                else:
+                    try:
+                        client.send_flow(
+                            to=message.from_user,
+                            flow_id=FLOW_ID,
+                            flow_token=FLOW_TOKEN,
+                            flow_cta=FLOW_CTA,
+                            flow_action=FLOW_ACTION,
+                            screen=FLOW_SCREEN,
+                        )
+                        return
+                    except AttributeError:
+                        reply_text = "Flow not supported in this PyWa version."
+                    except Exception as e:
+                        log.exception("Flow send failed")
+                        reply_text = f"Flow send failed: {e}"
+            else:
+                # Default echo
+                reply_text = "Echo: " + text
             
-            # Default echo
-            return message.reply_text("Echo: " + text)
-        except Exception:
-            log.exception("on_message failed")
+            # Send reply and store it
+            if reply_text:
+                reply_msg = message.reply_text(reply_text)
+                if phone and phone in conversations:
+                    conversations[phone].append({
+                        "id": getattr(reply_msg, "id", None) if reply_msg else None,
+                        "from": "bot",
+                        "to": phone,
+                        "text": reply_text,
+                        "direction": "outgoing",
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+        except Exception as e:
+            log.exception(f"on_message failed: {e}")
+            webhook_logs.appendleft({
+                "type": "error",
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e),
+                "context": "on_message"
+            })
     
     # Register status handler
     _status_decorator = None
@@ -115,10 +161,26 @@ def init_wa_client(client):
                 if s is None and len(args) >= 2:
                     s = args[1]
                 if s is not None:
-                    statuses_buffer.appendleft(strip_status(s))
+                    status_data = strip_status(s)
+                    statuses_buffer.appendleft(status_data)
+                    
+                    # Log webhook activity
+                    webhook_logs.appendleft({
+                        "type": "status",
+                        "timestamp": datetime.now().isoformat(),
+                        "status": getattr(s, "status", "unknown"),
+                        "message_id": getattr(s, "message_id", None)
+                    })
+                    
                     log.info("Status update: %s", getattr(s, "status", "unknown"))
-            except Exception:
-                log.exception("status callback failed")
+            except Exception as e:
+                log.exception(f"status callback failed: {e}")
+                webhook_logs.appendleft({
+                    "type": "error",
+                    "timestamp": datetime.now().isoformat(),
+                    "error": str(e),
+                    "context": "status_callback"
+                })
 
 def strip_message(m) -> Dict[str, Any]:
     """Extract message data"""
@@ -210,26 +272,56 @@ def list_statuses(limit: int = Query(50, ge=1, le=MAX_BUFFER)):
 @router.get("/conversations", summary="List all conversations")
 def list_conversations():
     """Get all conversations with last message preview"""
-    result = []
-    for phone, msgs in conversations.items():
-        if msgs:
-            last_msg = msgs[-1]
-            result.append({
-                "phone": phone,
-                "name": last_msg.get("name", phone),
-                "last_message": last_msg.get("text", ""),
-                "last_timestamp": last_msg.get("timestamp", ""),
-                "unread_count": 0,  # TODO: implement unread tracking
-                "message_count": len(msgs)
-            })
-    return sorted(result, key=lambda x: x["last_timestamp"], reverse=True)
+    try:
+        result = []
+        for phone, msgs in conversations.items():
+            if msgs:
+                last_msg = msgs[-1]
+                result.append({
+                    "phone": phone,
+                    "name": last_msg.get("name", phone),
+                    "last_message": last_msg.get("text", ""),
+                    "last_timestamp": last_msg.get("timestamp", ""),
+                    "unread_count": 0,
+                    "message_count": len(msgs)
+                })
+        
+        sorted_result = sorted(result, key=lambda x: x["last_timestamp"], reverse=True)
+        log.info(f"Returning {len(sorted_result)} conversations")
+        return sorted_result
+    except Exception as e:
+        log.exception(f"list_conversations failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/conversations/{phone}", summary="Get conversation with specific number")
 def get_conversation(phone: str):
     """Get full conversation history with a phone number"""
-    if phone not in conversations:
-        return {"phone": phone, "messages": []}
+    try:
+        if phone not in conversations:
+            return {"phone": phone, "messages": []}
+        return {
+            "phone": phone,
+            "messages": conversations[phone]
+        }
+    except Exception as e:
+        log.exception(f"get_conversation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/logs", summary="Get webhook logs")
+def get_webhook_logs(limit: int = Query(100, ge=1, le=MAX_BUFFER)):
+    """Get recent webhook activity logs from Meta"""
+    return list(webhook_logs)[:limit]
+
+@router.get("/debug", summary="Debug endpoint")
+def debug_info():
+    """Debug information about current state"""
     return {
-        "phone": phone,
-        "messages": conversations[phone]
+        "conversations_count": len(conversations),
+        "conversations_keys": list(conversations.keys()),
+        "messages_buffer_count": len(messages_buffer),
+        "webhook_logs_count": len(webhook_logs),
+        "recent_messages": list(messages_buffer)[:5],
+        "sample_conversation": {
+            phone: msgs[:2] for phone, msgs in list(conversations.items())[:2]
+        } if conversations else {}
     }
