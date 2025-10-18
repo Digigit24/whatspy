@@ -67,10 +67,12 @@ elif APP_SECRET:
 else:
     log.warning("No APP_SECRET provided; signature validation disabled.")
 
-if APP_ID and APP_SECRET and CALLBACK_URL:
-    wa_kwargs.update(app_id=APP_ID, app_secret=APP_SECRET, callback_url=CALLBACK_URL)
-elif CALLBACK_URL:
-    log.warning("CALLBACK_URL set but APP_ID/APP_SECRET missing; skipping auto-registration.")
+# IMPORTANT: Don't auto-register when using Gunicorn with multiple workers
+# This causes threading/pickling issues. Register webhook manually in Meta dashboard.
+# if APP_ID and APP_SECRET and CALLBACK_URL:
+#     wa_kwargs.update(app_id=APP_ID, app_secret=APP_SECRET, callback_url=CALLBACK_URL)
+
+log.info("WhatsApp client initialized. Register webhook manually at: https://developers.facebook.com")
 
 # Create WhatsApp client
 wa = WhatsApp(**wa_kwargs)
