@@ -1,8 +1,12 @@
 # routers/chat.py
 import logging
+import json
+import os
+from pathlib import Path
 from collections import deque
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from threading import Lock
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -15,14 +19,48 @@ router = APIRouter()
 wa_client = None
 
 # ────────────────────────────────
-# In-memory storage
+# Shared file-based storage
+# ────────────────────────────────
+DATA_DIR = Path("/tmp/whatspy_data")
+DATA_DIR.mkdir(exist_ok=True)
+CONVERSATIONS_FILE = DATA_DIR / "conversations.json"
+MESSAGES_FILE = DATA_DIR / "messages.json"
+LOGS_FILE = DATA_DIR / "webhook_logs.json"
+
+# Lock for thread-safe file access
+file_lock = Lock()
+
+def load_json_file(filepath: Path, default=None):
+    """Load JSON from file with lock"""
+    if default is None:
+        default = {}
+    try:
+        with file_lock:
+            if filepath.exists():
+                with open(filepath, 'r') as f:
+                    return json.load(f)
+    except Exception as e:
+        log.error(f"Failed to load {filepath}: {e}")
+    return default
+
+def save_json_file(filepath: Path, data):
+    """Save JSON to file with lock"""
+    try:
+        with file_lock:
+            with open(filepath, 'w') as f:
+                json.dump(data, f)
+    except Exception as e:
+        log.error(f"Failed to save {filepath}: {e}")
+
+# ────────────────────────────────
+# In-memory buffers (for backward compatibility)
 # ────────────────────────────────
 messages_buffer: deque = deque(maxlen=MAX_BUFFER)
 statuses_buffer: deque = deque(maxlen=MAX_BUFFER)
-webhook_logs: deque = deque(maxlen=MAX_BUFFER)  # Store all webhook activity
+webhook_logs: deque = deque(maxlen=MAX_BUFFER)
 
-# Store conversations grouped by phone number
-conversations: Dict[str, List[Dict]] = {}
+# Load persistent data
+conversations: Dict[str, List[Dict]] = load_json_file(CONVERSATIONS_FILE, {})
 
 def init_wa_client(client):
     """Initialize WhatsApp client and register handlers"""
