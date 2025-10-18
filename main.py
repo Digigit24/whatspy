@@ -118,6 +118,10 @@ def index():
 def chat_ui(request: Request):
     return jinja_templates.TemplateResponse("chat.html", {"request": request})
 
+@app.get("/logs", include_in_schema=False)
+def logs_ui(request: Request):
+    return jinja_templates.TemplateResponse("logs.html", {"request": request})
+
 @app.get("/dashboard", include_in_schema=False)
 def dashboard(request: Request):
     return jinja_templates.TemplateResponse(
@@ -130,8 +134,3 @@ def dashboard(request: Request):
             "buffer_size": MAX_BUFFER,
         },
     )
-
-
-
-
-#Happy Diwali

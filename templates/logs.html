@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webhook Logs</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #0f0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0f0;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: normal;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    button:hover {
+      background: #0c0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-box {
+      border: 1px solid #0f0;
+      padding: 15px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .log-container {
+      border: 1px solid #0f0;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 12px 15px;
+      border-bottom: 1px solid #0f0;
+      font-size: 13px;
+    }
+
+    .log-entry:hover {
+      background: rgba(0, 255, 0, 0.05);
+    }
+
+    .log-timestamp {
+      color: #0c0;
+      margin-right: 15px;
+    }
+
+    .log-type {
+      display: inline-block;
+      padding: 2px 8px;
+      margin-right: 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .log-type.message {
+      background: #0f0;
+      color: #000;
+    }
+
+    .log-type.status {
+      background: #ff0;
+      color: #000;
+    }
+
+    .log-type.error {
+      background: #f00;
+      color: #fff;
+    }
+
+    .log-details {
+      margin-top: 5px;
+      padding-left: 20px;
+      opacity: 0.8;
+      font-size: 12px;
+    }
+
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      opacity: 0.5;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #000;
+      border-left: 1px solid #0f0;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #0f0;
+    }
+
+    .filter-buttons {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid #0f0;
+      color: #0f0;
+    }
+
+    .filter-btn.active {
+      background: #0f0;
+      color: #000;
+    }
+
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #0f0;
+      font-size: 13px;
+    }
+
+    .auto-refresh input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .live-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #0f0;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: blink 1s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>
+      <span class="live-indicator"></span>
+      WEBHOOK LOGS
+    </h1>
+    <div class="controls">
+      <div class="auto-refresh">
+        <input type="checkbox" id="autoRefresh" checked>
+        <label for="autoRefresh">Auto-refresh (3s)</label>
+      </div>
+      <button onclick="refreshLogs()">REFRESH</button>
+      <button onclick="clearDisplay()">CLEAR</button>
+      <button onclick="exportLogs()">EXPORT</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat-box">
+      <div class="stat-label">TOTAL LOGS</div>
+      <div class="stat-value" id="totalLogs">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">MESSAGES</div>
+      <div class="stat-value" id="messageCount">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">STATUS UPDATES</div>
+      <div class="stat-value" id="statusCount">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">ERRORS</div>
+      <div class="stat-value" id="errorCount">0</div>
+    </div>
+  </div>
+
+  <div class="filter-buttons">
+    <button class="filter-btn active" onclick="setFilter('all')">ALL</button>
+    <button class="filter-btn" onclick="setFilter('message')">MESSAGES</button>
+    <button class="filter-btn" onclick="setFilter('status')">STATUS</button>
+    <button class="filter-btn" onclick="setFilter('error')">ERRORS</button>
+  </div>
+
+  <div class="log-container" id="logContainer">
+    <div class="empty-state">
+      Loading logs...
+    </div>
+  </div>
+
+  <script>
+    let logs = [];
+    let currentFilter = 'all';
+    let autoRefreshInterval = null;
+
+    async function refreshLogs() {
+      try {
+        const response = await fetch('/api/logs');
+        logs = await response.json();
+        updateStats();
+        renderLogs();
+      } catch (error) {
+        console.error('Failed to load logs:', error);
+      }
+    }
+
+    function updateStats() {
+      const messageCount = logs.filter(l => l.type === 'message').length;
+      const statusCount = logs.filter(l => l.type === 'status').length;
+      const errorCount = logs.filter(l => l.type === 'error').length;
+
+      document.getElementById('totalLogs').textContent = logs.length;
+      document.getElementById('messageCount').textContent = messageCount;
+      document.getElementById('statusCount').textContent = statusCount;
+      document.getElementById('errorCount').textContent = errorCount;
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logContainer');
+      
+      const filtered = currentFilter === 'all' 
+        ? logs 
+        : logs.filter(l => l.type === currentFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No logs to display</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(log => {
+        const time = new Date(log.timestamp).toLocaleTimeString('en-US', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+
+        let details = '';
+        if (log.type === 'message') {
+          details = `From: ${log.from || 'unknown'} | ID: ${log.message_id || 'N/A'}`;
+          if (log.text) details += `<br>Text: ${escapeHtml(log.text)}`;
+        } else if (log.type === 'status') {
+          details = `Status: ${log.status || 'unknown'} | Message ID: ${log.message_id || 'N/A'}`;
+        } else if (log.type === 'error') {
+          details = `Error: ${escapeHtml(log.error || 'unknown')}<br>Context: ${log.context || 'N/A'}`;
+        }
+
+        return `
+          <div class="log-entry">
+            <span class="log-timestamp">[${time}]</span>
+            <span class="log-type ${log.type}">${log.type.toUpperCase()}</span>
+            ${details ? `<div class="log-details">${details}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update button states
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      renderLogs();
+    }
+
+    function clearDisplay() {
+      if (confirm('Clear all logs from display? (This does not affect server logs)')) {
+        logs = [];
+        updateStats();
+        renderLogs();
+      }
+    }
+
+    function exportLogs() {
+      const dataStr = JSON.stringify(logs, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `webhook-logs-${new Date().toISOString()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Auto-refresh toggle
+    document.getElementById('autoRefresh').addEventListener('change', function() {
+      if (this.checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 3000);
+      } else {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+        }
+      }
+    });
+
+    // Initial load
+    refreshLogs();
+
+    // Start auto-refresh
+    autoRefreshInterval = setInterval(refreshLogs, 3000);
+  </script>
+</body>
+</html>

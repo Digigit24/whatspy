@@ -19,6 +19,7 @@ wa_client = None
 # ────────────────────────────────
 messages_buffer: deque = deque(maxlen=MAX_BUFFER)
 statuses_buffer: deque = deque(maxlen=MAX_BUFFER)
+webhook_logs: deque = deque(maxlen=MAX_BUFFER)  # Store all webhook activity
 
 # Store conversations grouped by phone number
 conversations: Dict[str, List[Dict]] = {}
