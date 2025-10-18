@@ -40,9 +40,9 @@ if not PHONE_ID or not TOKEN or not VERIFY_TOKEN:
     log.warning("Missing one of WHATSAPP_PHONE_ID / WHATSAPP_TOKEN / VERIFY_TOKEN")
 
 # ────────────────────────────────
-# Templates
+# Jinja2 Templates for HTML rendering
 # ────────────────────────────────
-templates = Jinja2Templates(directory="templates")
+jinja_templates = Jinja2Templates(directory="templates")
 
 # ────────────────────────────────
 # FastAPI app
@@ -116,11 +116,11 @@ def index():
 # ────────────────────────────────
 @app.get("/chat", include_in_schema=False)
 def chat_ui(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    return jinja_templates.TemplateResponse("chat.html", {"request": request})
 
 @app.get("/dashboard", include_in_schema=False)
 def dashboard(request: Request):
-    return templates.TemplateResponse(
+    return jinja_templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,
