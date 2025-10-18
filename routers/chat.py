@@ -64,30 +64,54 @@ conversations: Dict[str, List[Dict]] = load_json_file(CONVERSATIONS_FILE, {})
 
 def init_wa_client(client):
     """Initialize WhatsApp client and register handlers"""
-    global wa_client
+    global wa_client, conversations
     wa_client = client
+    
+    # Load conversations at startup
+    conversations = load_json_file(CONVERSATIONS_FILE, {})
+    log.info(f"🚀 INIT: Loaded {len(conversations)} conversations from disk")
+    log.info(f"🚀 INIT: Registering message handlers...")
     
     # Register message handler
     @wa_client.on_message()
     def on_message(client, message):
+        global conversations
+        log.info("="*50)
+        log.info("📩 MESSAGE HANDLER TRIGGERED!")
+        log.info(f"📩 From: {getattr(message, 'from_user', 'unknown')}")
+        log.info(f"📩 Text: {getattr(message, 'text', None)}")
+        log.info("="*50)
+        
         try:
+            # Reload conversations to get latest from disk
+            conversations = load_json_file(CONVERSATIONS_FILE, {})
+            log.info(f"💾 Loaded {len(conversations)} conversations from file")
+            
             # Log webhook activity
-            webhook_logs.appendleft({
+            webhook_log = {
                 "type": "message",
                 "timestamp": datetime.now().isoformat(),
                 "from": getattr(message, "from_user", "unknown"),
                 "message_id": getattr(message, "id", None),
                 "text": getattr(message, "text", None)[:100] if getattr(message, "text", None) else None
-            })
+            }
+            webhook_logs.appendleft(webhook_log)
+            
+            # Save logs to file
+            logs_list = list(webhook_logs)
+            save_json_file(LOGS_FILE, logs_list)
             
             msg_data = strip_message(message)
             messages_buffer.appendleft(msg_data)
             
             # Store in conversations
             phone = msg_data.get("from")
+            log.info(f"📱 Phone number: {phone}")
+            
             if phone:
                 if phone not in conversations:
                     conversations[phone] = []
+                    log.info(f"📝 Created new conversation for {phone}")
                 
                 msg_entry = {
                     "id": msg_data.get("id"),
@@ -99,22 +123,35 @@ def init_wa_client(client):
                     "timestamp": datetime.now().isoformat()
                 }
                 conversations[phone].append(msg_entry)
-                log.info(f"Message stored for {phone}: {msg_data.get('text', '')[:50]}")
+                log.info(f"✅ Added message to conversation. Total messages for {phone}: {len(conversations[phone])}")
+                
+                # Save to disk immediately
+                save_json_file(CONVERSATIONS_FILE, conversations)
+                log.info(f"💾 SAVED to {CONVERSATIONS_FILE}")
+                
+                # Verify it was saved
+                test_load = load_json_file(CONVERSATIONS_FILE, {})
+                log.info(f"✅ VERIFY: File now contains {len(test_load)} conversations")
+            else:
+                log.warning("⚠️ No phone number found in message!")
             
             # Auto-reply logic
             text = (message.text or "").strip()
             if not text:
-                reply_msg = message.reply_text("I only understand text for now 🙂")
+                reply_text = "I only understand text for now 🙂"
+                reply_msg = message.reply_text(reply_text)
                 # Store bot reply
                 if phone and phone in conversations:
                     conversations[phone].append({
                         "id": getattr(reply_msg, "id", None) if reply_msg else None,
                         "from": "bot",
                         "to": phone,
-                        "text": "I only understand text for now 🙂",
+                        "text": reply_text,
                         "direction": "outgoing",
                         "timestamp": datetime.now().isoformat()
                     })
+                    save_json_file(CONVERSATIONS_FILE, conversations)
+                    log.info(f"💬 Sent and saved auto-reply")
                 return
             
             low = text.lower()
@@ -162,6 +199,7 @@ def init_wa_client(client):
             
             # Send reply and store it
             if reply_text:
+                log.info(f"💬 Sending reply: {reply_text[:50]}...")
                 reply_msg = message.reply_text(reply_text)
                 if phone and phone in conversations:
                     conversations[phone].append({
@@ -172,15 +210,25 @@ def init_wa_client(client):
                         "direction": "outgoing",
                         "timestamp": datetime.now().isoformat()
                     })
+                    save_json_file(CONVERSATIONS_FILE, conversations)
+                    log.info(f"💬 Reply saved to conversation")
+            
+            log.info("="*50)
+            log.info("✅ MESSAGE HANDLER COMPLETED SUCCESSFULLY")
+            log.info("="*50)
             
         except Exception as e:
-            log.exception(f"on_message failed: {e}")
+            log.exception(f"❌ on_message failed: {e}")
             webhook_logs.appendleft({
                 "type": "error",
                 "timestamp": datetime.now().isoformat(),
                 "error": str(e),
                 "context": "on_message"
             })
+            logs_list = list(webhook_logs)
+            save_json_file(LOGS_FILE, logs_list)
+    
+    log.info("✅ INIT: Message handler registered successfully!")
     
     # Register status handler
     _status_decorator = None
@@ -310,7 +358,11 @@ def list_statuses(limit: int = Query(50, ge=1, le=MAX_BUFFER)):
 @router.get("/conversations", summary="List all conversations")
 def list_conversations():
     """Get all conversations with last message preview"""
+    global conversations
     try:
+        # Always reload from disk to get latest across all workers
+        conversations = load_json_file(CONVERSATIONS_FILE, {})
+        
         result = []
         for phone, msgs in conversations.items():
             if msgs:
@@ -334,7 +386,11 @@ def list_conversations():
 @router.get("/conversations/{phone}", summary="Get conversation with specific number")
 def get_conversation(phone: str):
     """Get full conversation history with a phone number"""
+    global conversations
     try:
+        # Reload from disk
+        conversations = load_json_file(CONVERSATIONS_FILE, {})
+        
         if phone not in conversations:
             return {"phone": phone, "messages": []}
         return {
@@ -348,11 +404,15 @@ def get_conversation(phone: str):
 @router.get("/logs", summary="Get webhook logs")
 def get_webhook_logs(limit: int = Query(100, ge=1, le=MAX_BUFFER)):
     """Get recent webhook activity logs from Meta"""
-    return list(webhook_logs)[:limit]
+    logs_list = load_json_file(LOGS_FILE, [])
+    return logs_list[:limit]
 
 @router.get("/debug", summary="Debug endpoint")
 def debug_info():
     """Debug information about current state"""
+    global conversations
+    conversations = load_json_file(CONVERSATIONS_FILE, {})
+    
     return {
         "conversations_count": len(conversations),
         "conversations_keys": list(conversations.keys()),
@@ -361,5 +421,10 @@ def debug_info():
         "recent_messages": list(messages_buffer)[:5],
         "sample_conversation": {
             phone: msgs[:2] for phone, msgs in list(conversations.items())[:2]
-        } if conversations else {}
+        } if conversations else {},
+        "data_files": {
+            "conversations_exists": CONVERSATIONS_FILE.exists(),
+            "messages_exists": MESSAGES_FILE.exists(),
+            "logs_exists": LOGS_FILE.exists()
+        }
     }
