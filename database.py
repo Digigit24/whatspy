@@ -151,6 +151,96 @@ class AdminUser(Base):
     last_login = Column(DateTime, nullable=True)
 
 
+
+# Add these to database.py after the existing models
+
+class Contact(Base):
+    """Store WhatsApp contacts"""
+    __tablename__ = "contacts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    phone = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=True)
+    profile_pic_url = Column(String(500), nullable=True)
+    status = Column(String(500), nullable=True)
+    is_business = Column(Boolean, default=False)
+    business_description = Column(Text, nullable=True)
+    labels = Column(JSON, nullable=True)  # Tags/labels
+    notes = Column(Text, nullable=True)  # Internal notes
+    last_seen = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "phone": self.phone,
+            "name": self.name,
+            "profile_pic_url": self.profile_pic_url,
+            "status": self.status,
+            "is_business": self.is_business,
+            "business_description": self.business_description,
+            "labels": self.labels or [],
+            "notes": self.notes,
+            "last_seen": self.last_seen.isoformat() if self.last_seen else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class Group(Base):
+    """Store WhatsApp group information"""
+    __tablename__ = "groups"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(String(100), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    participants = Column(JSON, nullable=True)  # List of phone numbers
+    admins = Column(JSON, nullable=True)  # List of admin phone numbers
+    created_by = Column(String(50), nullable=True)
+    group_invite_link = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "group_id": self.group_id,
+            "name": self.name,
+            "description": self.description,
+            "participants": self.participants or [],
+            "admins": self.admins or [],
+            "created_by": self.created_by,
+            "group_invite_link": self.group_invite_link,
+            "is_active": self.is_active,
+            "participant_count": len(self.participants) if self.participants else 0,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class MessageReaction(Base):
+    """Store message reactions"""
+    __tablename__ = "message_reactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(String(255), index=True, nullable=False)
+    phone = Column(String(50), nullable=False)
+    emoji = Column(String(10), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "message_id": self.message_id,
+            "phone": self.phone,
+            "emoji": self.emoji,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+    
+
+    
 # ────────────────────────────────
 # Database Functions
 # ────────────────────────────────

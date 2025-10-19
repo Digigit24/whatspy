@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WhatsApp Chats</title>
+  <title>WhatsApp Chats - Whatspy</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -15,11 +15,55 @@
       overflow: hidden;
     }
 
+    /* Top Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: #000;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    .top-bar h1 {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .top-bar .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    .logout-btn:hover {
+      background: #1a1a1a;
+    }
+
     .container {
       display: flex;
-      height: 100vh;
+      height: calc(100vh - 50px);
       max-width: 1800px;
-      margin: 0 auto;
+      margin: 50px auto 0;
     }
 
     /* Sidebar */
@@ -55,6 +99,30 @@
     .search-box:focus {
       outline: none;
       border-color: #555;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
     }
 
     .conversations-list {
@@ -105,7 +173,7 @@
 
     .unread-badge {
       display: inline-block;
-      background: #fff;
+      background: #0f0;
       color: #000;
       border-radius: 10px;
       padding: 2px 8px;
@@ -141,6 +209,11 @@
       margin-top: 2px;
     }
 
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+    }
+
     .chat-actions button {
       background: #1a1a1a;
       border: 1px solid #333;
@@ -149,7 +222,6 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 13px;
-      margin-left: 8px;
       transition: background 0.15s;
     }
 
@@ -185,6 +257,17 @@
       align-self: flex-end;
       background: #fff;
       color: #000;
+    }
+
+    .message-type {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+
+    .message.incoming .message-type {
+      color: #888;
     }
 
     .message-time {
@@ -281,6 +364,31 @@
       transform: none;
     }
 
+    /* Stats Bar */
+    .stats-bar {
+      padding: 12px 20px;
+      background: #0a0a0a;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-around;
+      font-size: 12px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f0;
+    }
+
+    .stat-label {
+      color: #888;
+      margin-top: 4px;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
@@ -325,6 +433,40 @@
       40% { transform: scale(1); opacity: 1; }
     }
 
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 2000;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.success {
+      border-color: #0f0;
+    }
+
+    .toast.error {
+      border-color: #f00;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .sidebar {
@@ -345,72 +487,44 @@
   </style>
 </head>
 <body>
-
-
-  <!-- Add logout button to header -->
-<style>
-  .top-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50px;
-    background: #000;
-    border-bottom: 1px solid #222;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    z-index: 1000;
-  }
-
-  .top-bar h1 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  .top-bar .user-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 13px;
-    color: #888;
-  }
-
-  .logout-btn {
-    background: transparent;
-    border: 1px solid #333;
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .logout-btn:hover {
-    background: #1a1a1a;
-  }
-
-  .container {
-    margin-top: 50px;
-    height: calc(100vh - 50px);
-  }
-</style>
-
-<div class="top-bar">
-  <h1>📡 Whatspy</h1>
-  <div class="user-info">
-    <span>👤 {{ username }}</span>
-    <a href="/logout" class="logout-btn">Logout</a>
+  <div class="top-bar">
+    <h1>📡 Whatspy</h1>
+    <div class="user-info">
+      <span>👤 {{ username }}</span>
+      <a href="/dashboard" class="logout-btn">Dashboard</a>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
   </div>
-</div>
+
   <div class="container">
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>Chats</h2>
         <input type="text" class="search-box" id="searchBox" placeholder="Search conversations...">
+        
+        <div class="tab-buttons">
+          <button class="tab-btn active" onclick="switchTab('chats')">Chats</button>
+          <button class="tab-btn" onclick="switchTab('contacts')">Contacts</button>
+          <button class="tab-btn" onclick="switchTab('groups')">Groups</button>
+        </div>
       </div>
+
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-item">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="statIncoming">0</div>
+          <div class="stat-label">Incoming</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="statOutgoing">0</div>
+          <div class="stat-label">Outgoing</div>
+        </div>
+      </div>
+
       <div class="conversations-list" id="conversationsList">
         <div class="loading">
           <span class="dot-pulse"></span>
@@ -428,8 +542,9 @@
           <div class="chat-phone" id="chatPhone"></div>
         </div>
         <div class="chat-actions">
-          <button onclick="refreshChat()">Refresh</button>
-          <button onclick="clearChat()">Clear</button>
+          <button onclick="refreshChat()">🔄 Refresh</button>
+          <button onclick="viewContact()">👤 Contact</button>
+          <button onclick="clearChat()">🗑️ Clear</button>
         </div>
       </div>
 
@@ -457,11 +572,46 @@
 
   <script>
     let conversations = [];
+    let contacts = [];
+    let groups = [];
     let currentChat = null;
     let currentMessages = [];
+    let currentTab = 'chats';
     let autoRefreshInterval = null;
+    let statsInterval = null;
 
-    // Load conversations on page load
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Switch tabs
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // Update active button
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Load appropriate data
+      if (tab === 'chats') {
+        loadConversations();
+      } else if (tab === 'contacts') {
+        loadContacts();
+      } else if (tab === 'groups') {
+        loadGroups();
+      }
+    }
+
+    // Load conversations
     async function loadConversations() {
       try {
         const response = await fetch('/api/conversations');
@@ -469,12 +619,49 @@
         renderConversations();
       } catch (error) {
         console.error('Failed to load conversations:', error);
-        document.getElementById('conversationsList').innerHTML = 
-          '<div style="padding: 20px; text-align: center; color: #888;">Failed to load conversations</div>';
+        showToast('Failed to load conversations', 'error');
       }
     }
 
-    // Render conversations list
+    // Load contacts
+    async function loadContacts() {
+      try {
+        const response = await fetch('/api/contacts');
+        contacts = await response.json();
+        renderContacts();
+      } catch (error) {
+        console.error('Failed to load contacts:', error);
+        showToast('Failed to load contacts', 'error');
+      }
+    }
+
+    // Load groups
+    async function loadGroups() {
+      try {
+        const response = await fetch('/api/groups');
+        groups = await response.json();
+        renderGroups();
+      } catch (error) {
+        console.error('Failed to load groups:', error);
+        showToast('Failed to load groups', 'error');
+      }
+    }
+
+    // Load statistics
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        
+        document.getElementById('statTotal').textContent = stats.total_messages || 0;
+        document.getElementById('statIncoming').textContent = stats.incoming_messages || 0;
+        document.getElementById('statOutgoing').textContent = stats.outgoing_messages || 0;
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    // Render conversations
     function renderConversations(filter = '') {
       const listEl = document.getElementById('conversationsList');
       
@@ -490,12 +677,68 @@
 
       listEl.innerHTML = filtered.map(conv => `
         <div class="conversation-item ${currentChat === conv.phone ? 'active' : ''}" 
-             onclick="openChat('${conv.phone}', '${conv.name}')">
+             onclick="openChat('${conv.phone}', '${escapeHtml(conv.name)}')">
           <div class="conversation-header">
-            <span class="conversation-name">${conv.name}</span>
+            <span class="conversation-name">${escapeHtml(conv.name)}</span>
             <span class="conversation-time">${formatTime(conv.last_timestamp)}</span>
           </div>
-          <div class="conversation-preview">${conv.last_message || 'No messages'}</div>
+          <div class="conversation-preview">
+            ${escapeHtml(conv.last_message || 'No messages')}
+            ${conv.message_count > 0 ? `<span class="unread-badge">${conv.message_count}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render contacts
+    function renderContacts(filter = '') {
+      const listEl = document.getElementById('conversationsList');
+      
+      if (contacts.length === 0) {
+        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No contacts yet</div>';
+        return;
+      }
+
+      const filtered = contacts.filter(contact => 
+        contact.name?.toLowerCase().includes(filter.toLowerCase()) ||
+        contact.phone.includes(filter)
+      );
+
+      listEl.innerHTML = filtered.map(contact => `
+        <div class="conversation-item" onclick="openChat('${contact.phone}', '${escapeHtml(contact.name || contact.phone)}')">
+          <div class="conversation-header">
+            <span class="conversation-name">${escapeHtml(contact.name || contact.phone)}</span>
+          </div>
+          <div class="conversation-preview">
+            ${contact.phone}
+            ${contact.is_business ? ' • Business' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render groups
+    function renderGroups(filter = '') {
+      const listEl = document.getElementById('conversationsList');
+      
+      if (groups.length === 0) {
+        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No groups yet</div>';
+        return;
+      }
+
+      const filtered = groups.filter(group => 
+        group.name.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      listEl.innerHTML = filtered.map(group => `
+        <div class="conversation-item">
+          <div class="conversation-header">
+            <span class="conversation-name">👥 ${escapeHtml(group.name)}</span>
+          </div>
+          <div class="conversation-preview">
+            ${group.participant_count} participants
+            ${group.is_active ? '' : ' • Inactive'}
+          </div>
         </div>
       `).join('');
     }
@@ -511,7 +754,9 @@
       document.getElementById('chatPhone').textContent = phone;
       
       // Highlight active conversation
-      renderConversations(document.getElementById('searchBox').value);
+      if (currentTab === 'chats') {
+        renderConversations(document.getElementById('searchBox').value);
+      }
       
       // Load messages
       await loadMessages(phone);
@@ -530,6 +775,7 @@
         renderMessages(silent);
       } catch (error) {
         console.error('Failed to load messages:', error);
+        if (!silent) showToast('Failed to load messages', 'error');
       }
     }
 
@@ -549,12 +795,16 @@
         return;
       }
 
-      container.innerHTML = currentMessages.map(msg => `
-        <div class="message ${msg.direction}">
-          <div>${msg.text || '(media)'}</div>
-          <div class="message-time">${formatTime(msg.timestamp)}</div>
-        </div>
-      `).join('');
+      container.innerHTML = currentMessages.map(msg => {
+        const typeLabel = msg.type && msg.type !== 'text' ? `<div class="message-type">${msg.type.toUpperCase()}</div>` : '';
+        return `
+          <div class="message ${msg.direction}">
+            ${typeLabel}
+            <div>${escapeHtml(msg.text || '(media)')}</div>
+            <div class="message-time">${formatTime(msg.timestamp)}</div>
+          </div>
+        `;
+      }).join('');
 
       // Auto-scroll to bottom if user was already at bottom
       if (!silent || wasAtBottom) {
@@ -588,16 +838,73 @@
           input.style.height = 'auto';
           await loadMessages(currentChat, true);
           await loadConversations();
+          showToast('Message sent successfully');
         } else {
-          alert('Failed to send message');
+          const error = await response.json();
+          showToast(error.detail || 'Failed to send message', 'error');
         }
       } catch (error) {
         console.error('Send failed:', error);
-        alert('Failed to send message');
+        showToast('Failed to send message', 'error');
       } finally {
         button.disabled = false;
         input.disabled = false;
         input.focus();
+      }
+    }
+
+    // View contact details
+    async function viewContact() {
+      if (!currentChat) return;
+      
+      try {
+        const response = await fetch(`/api/contacts/${currentChat}`);
+        if (response.ok) {
+          const contact = await response.json();
+          alert(`Contact Details:\n\nName: ${contact.name || 'Not set'}\nPhone: ${contact.phone}\nBusiness: ${contact.is_business ? 'Yes' : 'No'}\nNotes: ${contact.notes || 'None'}`);
+        } else {
+          showToast('Contact not found', 'error');
+        }
+      } catch (error) {
+        console.error('Failed to load contact:', error);
+        showToast('Failed to load contact details', 'error');
+      }
+    }
+
+    // Refresh current chat
+    async function refreshChat() {
+      if (currentChat) {
+        await loadMessages(currentChat);
+        await loadConversations();
+        await loadStats();
+        showToast('Refreshed');
+      }
+    }
+
+    // Clear chat
+    async function clearChat() {
+      if (!currentChat) return;
+      
+      if (!confirm('Are you sure you want to delete all messages in this conversation?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/conversations/${currentChat}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          showToast('Conversation cleared');
+          currentMessages = [];
+          renderMessages();
+          await loadConversations();
+        } else {
+          showToast('Failed to clear conversation', 'error');
+        }
+      } catch (error) {
+        console.error('Clear failed:', error);
+        showToast('Failed to clear conversation', 'error');
       }
     }
 
@@ -615,22 +922,23 @@
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
-    // Refresh current chat
-    async function refreshChat() {
-      if (currentChat) {
-        await loadMessages(currentChat);
-        await loadConversations();
-      }
-    }
-
-    // Clear chat (not implemented - would need backend support)
-    function clearChat() {
-      alert('Clear chat functionality requires backend implementation');
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     // Search filter
     document.getElementById('searchBox').addEventListener('input', (e) => {
-      renderConversations(e.target.value);
+      const filter = e.target.value;
+      if (currentTab === 'chats') {
+        renderConversations(filter);
+      } else if (currentTab === 'contacts') {
+        renderContacts(filter);
+      } else if (currentTab === 'groups') {
+        renderGroups(filter);
+      }
     });
 
     // Message input auto-resize
@@ -649,9 +957,19 @@
 
     // Initial load
     loadConversations();
+    loadStats();
     
     // Refresh conversations every 10 seconds
     setInterval(loadConversations, 10000);
+    
+    // Refresh stats every 30 seconds
+    statsInterval = setInterval(loadStats, 30000);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      if (statsInterval) clearInterval(statsInterval);
+    });
   </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
+from routers import chat, campaigns, templates, contacts, groups
 
 from pywa import WhatsApp
 
@@ -19,7 +20,7 @@ env_path = BASE_DIR / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # Now import config and other modules
-from routers import chat, campaigns, templates
+
 from config import (
     PHONE_ID, TOKEN, VERIFY_TOKEN, CALLBACK_URL,
     APP_ID, APP_SECRET, WEBHOOK_DELAY, VALIDATE_UPDATES,
@@ -109,6 +110,11 @@ templates.init_wa_client(wa)
 app.include_router(chat.router, prefix="/api", tags=["Chat"], dependencies=[Depends(require_auth)])
 app.include_router(campaigns.router, prefix="/api", tags=["Campaigns"], dependencies=[Depends(require_auth)])
 app.include_router(templates.router, prefix="/api", tags=["Templates"], dependencies=[Depends(require_auth)])
+app.include_router(chat.router, prefix="/api", tags=["Chat"], dependencies=[Depends(require_auth)])
+app.include_router(campaigns.router, prefix="/api", tags=["Campaigns"], dependencies=[Depends(require_auth)])
+app.include_router(templates.router, prefix="/api", tags=["Templates"], dependencies=[Depends(require_auth)])
+app.include_router(contacts.router, prefix="/api", tags=["Contacts"], dependencies=[Depends(require_auth)])
+app.include_router(groups.router, prefix="/api", tags=["Groups"], dependencies=[Depends(require_auth)])
 
 # ────────────────────────────────
 # Public Routes
