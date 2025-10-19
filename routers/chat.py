@@ -28,7 +28,7 @@ def save_message_to_db(
     text: Optional[str],
     message_type: Optional[str],
     direction: str,
-    metadata: Optional[Dict] = None  # ⬅️ Parameter name stays same
+    metadata: Optional[Dict] = None
 ):
     """Save message to database"""
     try:
@@ -39,7 +39,7 @@ def save_message_to_db(
             text=text,
             message_type=message_type,
             direction=direction,
-            meta_data=metadata  # ⬅️ Changed to meta_data
+            meta_data=metadata
         )
         db.add(message)
         db.commit()
