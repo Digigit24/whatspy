@@ -166,6 +166,7 @@ class Contact(Base):
     is_business = Column(Boolean, default=False)
     business_description = Column(Text, nullable=True)
     labels = Column(JSON, nullable=True)  # Tags/labels
+    groups = Column(JSON, nullable=True) 
     notes = Column(Text, nullable=True)  # Internal notes
     last_seen = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -181,6 +182,7 @@ class Contact(Base):
             "is_business": self.is_business,
             "business_description": self.business_description,
             "labels": self.labels or [],
+            "groups": self.groups or [],
             "notes": self.notes,
             "last_seen": self.last_seen.isoformat() if self.last_seen else None,
             "created_at": self.created_at.isoformat() if self.created_at else None
@@ -240,7 +242,7 @@ class MessageReaction(Base):
         }
     
 
-    
+
 # ────────────────────────────────
 # Database Functions
 # ────────────────────────────────

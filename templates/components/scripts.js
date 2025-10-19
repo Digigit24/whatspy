@@ -192,7 +192,8 @@ function renderContacts(filter = '') {
       <div class="conversation-preview">
         ${contact.phone}
         ${contact.is_business ? ' • 💼 Business' : ''}
-        ${contact.labels && contact.labels.length > 0 ? ` • ${contact.labels.join(', ')}` : ''}
+        ${contact.labels && contact.labels.length > 0 ? `<br><small style="color: #888;">🏷️ ${contact.labels.join(', ')}</small>` : ''}
+        ${contact.groups && contact.groups.length > 0 ? `<br><small style="color: #0f0;">👥 ${contact.groups.join(', ')}</small>` : ''}
       </div>
       <div class="item-actions">
         <button class="item-action-btn" onclick="event.stopPropagation(); openEditContactModal('${contact.phone}')">✏️ Edit</button>
@@ -412,13 +413,16 @@ async function submitAddContact(event) {
   const name = document.getElementById('contactName').value.trim();
   const notes = document.getElementById('contactNotes').value.trim();
   const labelsText = document.getElementById('contactLabels').value.trim();
+  const groupsText = document.getElementById('contactGroups').value.trim();  // ⬅️ ADD THIS
+  
   const labels = labelsText ? labelsText.split(',').map(l => l.trim()).filter(l => l) : [];
+  const groups = groupsText ? groupsText.split(',').map(g => g.trim()).filter(g => g) : [];  // ⬅️ ADD THIS
   
   try {
     const response = await fetch('/api/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, name, notes, labels })
+      body: JSON.stringify({ phone, name, notes, labels, groups })  // ⬅️ ADD groups
     });
     
     if (response.ok) {
@@ -444,6 +448,8 @@ function openImportContactsModal() {
   openModal('importContactsModal');
 }
 
+// In scripts.js, replace the handleContactsFile function
+
 async function handleContactsFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -467,7 +473,8 @@ async function handleContactsFile(event) {
       phone: String(row.phone || '').trim(),
       name: String(row.name || '').trim(),
       notes: String(row.notes || '').trim(),
-      labels: row.labels ? String(row.labels).split(',').map(l => l.trim()).filter(l => l) : []
+      labels: row.labels ? String(row.labels).split(',').map(l => l.trim()).filter(l => l) : [],
+      groups: row.groups ? String(row.groups).split(',').map(g => g.trim()).filter(g => g) : []  // ⬅️ ADD THIS
     })).filter(c => c.phone);
     
     if (contactsToImport.length === 0) {
@@ -482,6 +489,7 @@ async function handleContactsFile(event) {
       ${contactsToImport.slice(0, 5).map(c => `
         <div style="padding: 4px 0; border-bottom: 1px solid #222;">
           <strong>${escapeHtml(c.name || 'No name')}</strong> - ${c.phone}
+          ${c.groups && c.groups.length > 0 ? `<br><small style="color: #888;">Groups: ${c.groups.join(', ')}</small>` : ''}
         </div>
       `).join('')}
       ${contactsToImport.length > 5 ? `<p style="color: #888; margin-top: 8px;">...and ${contactsToImport.length - 5} more</p>` : ''}
@@ -535,6 +543,8 @@ async function submitImportContacts() {
   }
 }
 
+// In scripts.js, replace the openEditContactModal function
+
 async function openEditContactModal(phone) {
   try {
     const response = await fetch(`/api/contacts/${phone}`);
@@ -550,6 +560,7 @@ async function openEditContactModal(phone) {
     document.getElementById('editContactName').value = contact.name || '';
     document.getElementById('editContactNotes').value = contact.notes || '';
     document.getElementById('editContactLabels').value = contact.labels ? contact.labels.join(', ') : '';
+    document.getElementById('editContactGroups').value = contact.groups ? contact.groups.join(', ') : '';  // ⬅️ ADD THIS
     document.getElementById('editContactBusiness').checked = contact.is_business || false;
     
     openModal('editContactModal');
@@ -559,6 +570,8 @@ async function openEditContactModal(phone) {
   }
 }
 
+// In scripts.js, replace the submitEditContact function
+
 async function submitEditContact(event) {
   event.preventDefault();
   
@@ -566,14 +579,17 @@ async function submitEditContact(event) {
   const name = document.getElementById('editContactName').value.trim();
   const notes = document.getElementById('editContactNotes').value.trim();
   const labelsText = document.getElementById('editContactLabels').value.trim();
-  const labels = labelsText ? labelsText.split(',').map(l => l.trim()).filter(l => l) : [];
+  const groupsText = document.getElementById('editContactGroups').value.trim();  // ⬅️ ADD THIS
   const is_business = document.getElementById('editContactBusiness').checked;
+  
+  const labels = labelsText ? labelsText.split(',').map(l => l.trim()).filter(l => l) : [];
+  const groups = groupsText ? groupsText.split(',').map(g => g.trim()).filter(g => g) : [];  // ⬅️ ADD THIS
   
   try {
     const response = await fetch(`/api/contacts/${phone}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, notes, labels, is_business })
+      body: JSON.stringify({ name, notes, labels, groups, is_business })  // ⬅️ ADD groups
     });
     
     if (response.ok) {

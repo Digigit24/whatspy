@@ -1,6 +1,7 @@
 <!-- components/modals.html -->
 
 <!-- Add Contact Modal -->
+<!-- Replace the Add Contact Modal in modals.html -->
 <div class="modal" id="addContactModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -28,6 +29,14 @@
         <div class="form-group">
           <label class="form-label">Labels (comma-separated)</label>
           <input type="text" class="form-input" id="contactLabels" placeholder="customer, vip, important">
+          <small style="color: #888; font-size: 12px;">e.g., customer, vip, wholesale</small>
+        </div>
+        
+        <!-- ⬇️ NEW GROUPS FIELD -->
+        <div class="form-group">
+          <label class="form-label">Groups (comma-separated)</label>
+          <input type="text" class="form-input" id="contactGroups" placeholder="sales, marketing, support">
+          <small style="color: #888; font-size: 12px;">Organize contacts into groups</small>
         </div>
       </form>
     </div>
@@ -62,6 +71,7 @@
           <li><code>name</code> - Contact name (optional)</li>
           <li><code>notes</code> - Additional notes (optional)</li>
           <li><code>labels</code> - Comma-separated tags (optional)</li>
+          <li><code>groups</code> - Comma-separated groups (optional)</li> 
         </ul>
       </div>
       
@@ -77,7 +87,7 @@
   </div>
 </div>
 
-<!-- Edit Contact Modal -->
+<!-- Edit Contact Modal in modals.html -->
 <div class="modal" id="editContactModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -106,6 +116,13 @@
         <div class="form-group">
           <label class="form-label">Labels (comma-separated)</label>
           <input type="text" class="form-input" id="editContactLabels" placeholder="customer, vip">
+        </div>
+        
+        <!-- ⬇️ NEW GROUPS FIELD -->
+        <div class="form-group">
+          <label class="form-label">Groups (comma-separated)</label>
+          <input type="text" class="form-input" id="editContactGroups" placeholder="sales, marketing">
+          <small style="color: #888; font-size: 12px;">Organize contacts into groups</small>
         </div>
         
         <div class="form-group">

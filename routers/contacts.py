@@ -23,12 +23,14 @@ class ContactCreate(BaseModel):
     name: Optional[str] = None
     notes: Optional[str] = None
     labels: Optional[List[str]] = []
+    groups: Optional[List[str]] = []
 
 
 class ContactUpdate(BaseModel):
     name: Optional[str] = None
     notes: Optional[str] = None
     labels: Optional[List[str]] = None
+    groups: Optional[List[str]] = None
     is_business: Optional[bool] = None
 
 
