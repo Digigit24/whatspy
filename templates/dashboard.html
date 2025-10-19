@@ -2,76 +2,230 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Whatspy Dashboard</title>
   <style>
-    body { font-family: system-ui, -apple-system, Arial, sans-serif; padding: 24px; color:#111; }
-    h1 { margin: 0 0 16px; }
-    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-    .card { padding:16px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow: 0 1px 2px rgba(0,0,0,.04);}
-    .muted { color:#6b7280; }
-    ul { margin: 8px 0 0 18px; }
-    .kv p { margin: 6px 0; }
-    .footer { margin-top: 24px; font-size: 12px; color:#6b7280; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      font-family: system-ui, -apple-system, Arial, sans-serif; 
+      background: #000;
+      color: #fff;
+      padding: 0;
+    }
+
+    .top-bar {
+      background: #111;
+      border-bottom: 1px solid #222;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .top-bar h1 {
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .logout-btn:hover {
+      background: #1a1a1a;
+    }
+
+    .container {
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .nav-links a {
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .nav-links a:hover {
+      background: #2a2a2a;
+    }
+
+    h2 { 
+      margin: 0 0 16px; 
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    code { 
+      background: #1a1a1a; 
+      padding: 4px 8px; 
+      border-radius: 4px;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .grid { 
+      display: grid; 
+      gap: 16px; 
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      margin-bottom: 16px;
+    }
+    
+    .card { 
+      padding: 20px; 
+      background: #111; 
+      border: 1px solid #222; 
+      border-radius: 10px;
+    }
+    
+    .muted { color: #888; }
+    
+    ul { 
+      margin: 8px 0 0 18px;
+      color: #aaa;
+    }
+
+    ul li {
+      margin: 6px 0;
+    }
+    
+    .kv p { 
+      margin: 10px 0;
+      color: #aaa;
+    }
+
+    .kv p b {
+      color: #fff;
+      display: inline-block;
+      min-width: 120px;
+    }
+    
+    .footer { 
+      margin-top: 32px; 
+      padding-top: 20px;
+      border-top: 1px solid #222;
+      font-size: 12px; 
+      color: #666;
+      text-align: center;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .status-ok {
+      background: rgba(0, 255, 0, 0.1);
+      color: #0f0;
+    }
+
+    .status-warning {
+      background: rgba(255, 255, 0, 0.1);
+      color: #ff0;
+    }
   </style>
 </head>
 <body>
-  <h1>📡 Whatspy Dashboard</h1>
+  <div class="top-bar">
+    <h1>📡 Whatspy Dashboard</h1>
+    <div class="user-info">
+      <span>👤 {{ username }}</span>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+  </div>
 
-  <div class="grid">
-    <div class="card">
-      <h3>🔧 Configuration</h3>
-      <div class="kv">
-        <p><b>Phone ID:</b> <code>{{ phone_id }}</code></p>
-        <p><b>Webhook:</b> <code>{{ webhook }}</code></p>
-        <p><b>Verify Token:</b> <code>{{ verify_token }}</code></p>
-        <p><b>Buffer Size:</b> <code>{{ buffer_size }}</code></p>
+  <div class="container">
+    <div class="nav-links">
+      <a href="/chat">💬 Chat</a>
+      <a href="/logs">📊 Logs</a>
+      <a href="/dashboard">🏠 Dashboard</a>
+      <a href="/docs">📚 API Docs</a>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>🔧 Configuration</h2>
+        <div class="kv">
+          <p><b>Phone ID:</b> <code>{{ phone_id }}</code></p>
+          <p><b>Webhook:</b> <code>{{ webhook }}</code></p>
+          <p><b>Verify Token:</b> <code>{{ verify_token }}</code></p>
+          <p><b>Buffer Size:</b> <code>{{ buffer_size }}</code></p>
+          <p><b>Status:</b> <span class="status-badge status-ok">ACTIVE</span></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📌 API Endpoints</h2>
+        <ul>
+          <li><code>POST /api/send/text</code> - Send message</li>
+          <li><code>GET /api/conversations</code> - List chats</li>
+          <li><code>GET /api/messages</code> - Recent messages</li>
+          <li><code>POST /api/campaigns/broadcast</code> - Broadcast</li>
+          <li><code>GET /api/templates</code> - Templates</li>
+          <li><code>GET /api/logs</code> - Webhook logs</li>
+        </ul>
+        <p class="muted" style="margin-top: 12px; font-size: 12px;">
+          All endpoints require authentication
+        </p>
       </div>
     </div>
 
-    <div class="card">
-      <h3>🔌 API Endpoints</h3>
-      <ul>
-        {% for ep in endpoints %}
-          <li><code>{{ ep }}</code></li>
-        {% endfor %}
-      </ul>
-      <p class="muted">Use <code>Authorization: Bearer &lt;token&gt;</code> at the reverse proxy if you restrict access.</p>
+    <div class="grid">
+      <div class="card">
+        <h2>ℹ️ System Information</h2>
+        <div class="kv">
+          <p><b>Version:</b> 3.0.0</p>
+          <p><b>Framework:</b> FastAPI + PyWa</p>
+          <p><b>Database:</b> PostgreSQL</p>
+          <p><b>Authentication:</b> Session-based</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🔗 Quick Links</h2>
+        <ul>
+          <li><a href="/chat" style="color: #0f0;">Chat Interface</a></li>
+          <li><a href="/logs" style="color: #0f0;">Webhook Logs</a></li>
+          <li><a href="/docs" style="color: #0f0;">API Documentation</a></li>
+          <li><a href="/healthz" style="color: #0f0;">Health Check</a></li>
+        </ul>
+      </div>
     </div>
+
+    <p class="footer">
+      ✅ Running on whatsapp.dglinkup.com • Webhook must be publicly accessible (HTTPS) for Meta verification
+    </p>
   </div>
-
-  <div class="grid" style="margin-top:16px">
-    <div class="card">
-      <h3>📨 Recent Messages</h3>
-      {% if messages %}
-        {% for msg in messages %}
-          <div style="border-bottom:1px dashed #eee; padding:8px 0;">
-            <div><b>From:</b> {{ msg.from }} {% if msg.name %}({{ msg.name }}){% endif %}</div>
-            <div><b>Text:</b> {{ msg.text }}</div>
-            <div class="muted">{{ msg.timestamp }}</div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <p class="muted">No messages yet.</p>
-      {% endif %}
-    </div>
-
-    <div class="card">
-      <h3>📊 Status Updates</h3>
-      {% if statuses %}
-        {% for st in statuses %}
-          <div style="border-bottom:1px dashed #eee; padding:8px 0;">
-            <div><b>Message ID:</b> {{ st.message_id }}</div>
-            <div><b>Status:</b> {{ st.status }}</div>
-            <div class="muted">{{ st.timestamp }}</div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <p class="muted">No status logs yet.</p>
-      {% endif %}
-    </div>
-  </div>
-
-  <p class="footer">✅ Running at this host; webhook must be reachable publicly (HTTPS) for Meta verification.</p>
 </body>
 </html>
