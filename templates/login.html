@@ -5,22 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Whatspy</title>
   <style>
+    /* Reset and Base */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      font-family: 'Courier New', monospace;
+    html, body {
+      height: 100%;
       background: #000;
-      color: #0f0;
+      color: #fff;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* Smooth fade-in */
+    body {
+      animation: fadeIn 1.2s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .login-container {
       width: 100%;
       max-width: 400px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 50px 40px;
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(255,255,255,0.05);
+      transform: translateY(0);
+      transition: all 0.5s ease;
+    }
+
+    .login-container:hover {
+      border-color: rgba(255,255,255,0.25);
+      box-shadow: 0 0 60px rgba(255,255,255,0.08);
+      transform: translateY(-3px);
     }
 
     .logo {
@@ -29,60 +53,83 @@
     }
 
     .logo h1 {
-      font-size: 32px;
-      font-weight: normal;
-      margin-bottom: 8px;
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .logo h1::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: #fff;
+      opacity: 0.1;
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 0.5s ease;
+    }
+
+    .logo h1:hover::after {
+      transform: scaleX(1);
+      transform-origin: left;
     }
 
     .logo p {
-      font-size: 14px;
-      opacity: 0.7;
-    }
-
-    .login-box {
-      border: 1px solid #0f0;
-      padding: 40px 30px;
-      background: rgba(0, 255, 0, 0.02);
+      font-size: 13px;
+      opacity: 0.6;
+      margin-top: 6px;
+      letter-spacing: 0.5px;
     }
 
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 26px;
+      transition: all 0.3s ease;
     }
 
     label {
       display: block;
+      font-size: 12px;
+      letter-spacing: 1px;
+      opacity: 0.7;
       margin-bottom: 8px;
-      font-size: 13px;
-      opacity: 0.9;
     }
 
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      padding: 12px 16px;
-      background: #000;
-      border: 1px solid #0f0;
-      color: #0f0;
-      font-family: 'Courier New', monospace;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      border-radius: 6px;
       font-size: 14px;
+      transition: all 0.3s ease;
     }
 
     input[type="text"]:focus,
     input[type="password"]:focus {
       outline: none;
-      border-color: #0c0;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+      border-color: #fff;
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 0 12px rgba(255,255,255,0.1);
     }
 
     .remember-me {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 24px;
       font-size: 13px;
+      opacity: 0.7;
+      margin-bottom: 28px;
     }
 
     .remember-me input[type="checkbox"] {
+      accent-color: #fff;
       width: 16px;
       height: 16px;
       cursor: pointer;
@@ -91,38 +138,50 @@
     button[type="submit"] {
       width: 100%;
       padding: 14px;
-      background: #0f0;
+      background: #fff;
       color: #000;
       border: none;
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      font-weight: bold;
+      border-radius: 6px;
+      font-weight: 600;
+      letter-spacing: 1px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.3s ease;
     }
 
     button[type="submit"]:hover {
-      background: #0c0;
+      background: #e5e5e5;
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
     }
 
     button[type="submit"]:active {
-      background: #0a0;
+      background: #ccc;
+      transform: translateY(0);
     }
 
     .error-message {
-      background: rgba(255, 0, 0, 0.1);
-      border: 1px solid #f00;
-      color: #f00;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
       padding: 12px 16px;
       margin-bottom: 24px;
       font-size: 13px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
     }
 
     .footer {
       text-align: center;
       margin-top: 32px;
-      font-size: 12px;
-      opacity: 0.5;
+      font-size: 11px;
+      opacity: 0.4;
+      letter-spacing: 0.5px;
     }
 
     @keyframes blink {
@@ -132,10 +191,10 @@
 
     .cursor {
       display: inline-block;
-      width: 8px;
-      height: 16px;
-      background: #0f0;
-      margin-left: 4px;
+      width: 6px;
+      height: 18px;
+      background: #fff;
+      margin-left: 3px;
       animation: blink 1s infinite;
     }
   </style>
@@ -143,7 +202,7 @@
 <body>
   <div class="login-container">
     <div class="logo">
-      <h1>📡 WHATSPY<span class="cursor"></span></h1>
+      <h1>WHATSPY<span class="cursor"></span></h1>
       <p>WhatsApp Business API Management</p>
     </div>
 
