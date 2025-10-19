@@ -1,0 +1,205 @@
+<!-- components/modals.html -->
+
+<!-- Add Contact Modal -->
+<div class="modal" id="addContactModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Add New Contact</h3>
+      <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="addContactForm" onsubmit="submitAddContact(event)">
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input type="tel" class="form-input" id="contactPhone" placeholder="919876543210" required>
+          <small style="color: #888; font-size: 12px;">International format without +</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-input" id="contactName" placeholder="John Doe">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-textarea" id="contactNotes" placeholder="Additional notes..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Labels (comma-separated)</label>
+          <input type="text" class="form-input" id="contactLabels" placeholder="customer, vip, important">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addContactModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('addContactForm').requestSubmit()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Contacts Modal -->
+<div class="modal" id="importContactsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Import Contacts from Excel</h3>
+      <button class="modal-close" onclick="closeModal('importContactsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Excel File (.xlsx, .xls, .csv)</label>
+        <div class="file-upload" onclick="document.getElementById('contactsFile').click()">
+          <input type="file" id="contactsFile" accept=".xlsx,.xls,.csv" onchange="handleContactsFile(event)">
+          <div class="file-upload-icon">📄</div>
+          <div class="file-upload-text" id="fileUploadText">Click to select file or drag & drop</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 16px; padding: 12px; background: #1a1a1a; border-radius: 6px;">
+        <p style="font-size: 13px; color: #ccc; margin-bottom: 8px;"><strong>Required Excel Columns:</strong></p>
+        <ul style="font-size: 12px; color: #888; padding-left: 20px;">
+          <li><code>phone</code> - Phone number (required, international format)</li>
+          <li><code>name</code> - Contact name (optional)</li>
+          <li><code>notes</code> - Additional notes (optional)</li>
+          <li><code>labels</code> - Comma-separated tags (optional)</li>
+        </ul>
+      </div>
+      
+      <div id="importPreview" style="display: none; margin-top: 16px;">
+        <p style="font-size: 14px; margin-bottom: 8px;">Preview:</p>
+        <div id="importPreviewContent" style="max-height: 200px; overflow-y: auto; background: #0a0a0a; padding: 12px; border-radius: 6px; font-size: 12px;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('importContactsModal')">Cancel</button>
+      <button class="btn btn-primary" id="btnConfirmImport" onclick="submitImportContacts()" disabled>Import Contacts</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Contact Modal -->
+<div class="modal" id="editContactModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Contact</h3>
+      <button class="modal-close" onclick="closeModal('editContactModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="editContactForm" onsubmit="submitEditContact(event)">
+        <input type="hidden" id="editContactPhone">
+        
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-input" id="editContactPhoneDisplay" readonly style="background: #0a0a0a;">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-input" id="editContactName" placeholder="John Doe">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-textarea" id="editContactNotes" placeholder="Additional notes..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Labels (comma-separated)</label>
+          <input type="text" class="form-input" id="editContactLabels" placeholder="customer, vip">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="editContactBusiness" style="width: auto;">
+            Business Account
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editContactModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('editContactForm').requestSubmit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal" id="createGroupModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Create WhatsApp Group</h3>
+      <button class="modal-close" onclick="closeModal('createGroupModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="createGroupForm" onsubmit="submitCreateGroup(event)">
+        <div class="form-group">
+          <label class="form-label">Group ID *</label>
+          <input type="text" class="form-input" id="groupId" placeholder="120363XXXXXXXXX@g.us" required>
+          <small style="color: #888; font-size: 12px;">WhatsApp Group ID</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Group Name *</label>
+          <input type="text" class="form-input" id="groupName" placeholder="My Group" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="groupDescription" placeholder="Group description..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Participants (one phone per line)</label>
+          <textarea class="form-textarea" id="groupParticipants" placeholder="919876543210&#10;919876543211&#10;919876543212"></textarea>
+          <small style="color: #888; font-size: 12px;">International format without +</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Admins (one phone per line)</label>
+          <textarea class="form-textarea" id="groupAdmins" placeholder="919876543210"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('createGroupModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('createGroupForm').requestSubmit()">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Group Modal -->
+<div class="modal" id="editGroupModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Group</h3>
+      <button class="modal-close" onclick="closeModal('editGroupModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="editGroupForm" onsubmit="submitEditGroup(event)">
+        <input type="hidden" id="editGroupId">
+        
+        <div class="form-group">
+          <label class="form-label">Group Name</label>
+          <input type="text" class="form-input" id="editGroupName" placeholder="My Group">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="editGroupDescription"></textarea>
+        </div>
+        
+        <div class="form-group">
+          
+          <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="editGroupActive" style="width: auto;">
+            Group Active
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editGroupModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('editGroupForm').requestSubmit()">Save Changes</button>
+    </div>
+  </div>
+</div>

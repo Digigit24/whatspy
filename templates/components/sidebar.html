@@ -1,0 +1,52 @@
+<!-- components/sidebar.html -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>Chats</h2>
+    <input type="text" class="search-box" id="searchBox" placeholder="Search...">
+    
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab('chats')">Chats</button>
+      <button class="tab-btn" onclick="switchTab('contacts')">Contacts</button>
+      <button class="tab-btn" onclick="switchTab('groups')">Groups</button>
+    </div>
+
+    <!-- Action Buttons (shown based on active tab) -->
+    <div class="action-buttons" id="actionButtons" style="display: none;">
+      <!-- Contacts Actions -->
+      <button class="action-btn" id="btnAddContact" onclick="openAddContactModal()" style="display: none;">
+        ➕ Add Contact
+      </button>
+      <button class="action-btn secondary" id="btnImportContacts" onclick="openImportContactsModal()" style="display: none;">
+        📄 Import Excel
+      </button>
+      
+      <!-- Groups Actions -->
+      <button class="action-btn" id="btnCreateGroup" onclick="openCreateGroupModal()" style="display: none;">
+        👥 Create Group
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statIncoming">0</div>
+      <div class="stat-label">Incoming</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statOutgoing">0</div>
+      <div class="stat-label">Outgoing</div>
+    </div>
+  </div>
+
+  <div class="conversations-list" id="conversationsList">
+    <div class="loading">
+      <span class="dot-pulse"></span>
+      <span class="dot-pulse"></span>
+      <span class="dot-pulse"></span>
+    </div>
+  </div>
+</div>
