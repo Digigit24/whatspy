@@ -92,9 +92,10 @@ def init_wa_client(client):
     
     # Register message handler
     @wa_client.on_message()
+    @wa_client.on_message()
     def on_message(client, message):
         from database import get_db_session
-        
+    
         log.info("="*50)
         log.info("📩 MESSAGE HANDLER TRIGGERED!")
         log.info(f"📩 From: {getattr(message, 'from_user', 'unknown')}")
@@ -103,18 +104,29 @@ def init_wa_client(client):
         
         try:
             with get_db_session() as db:
-                # Extract message data
-                phone = getattr(message, "from_user", None)
-                contact_name = None
-                if hasattr(message, "contact") and message.contact:
-                    contact_name = getattr(message.contact, "name", None)
+                # Extract message data - handle PyWa User object
+                from_user = getattr(message, "from_user", None)
+                
+                # Extract phone string from PyWa User object
+                if from_user:
+                    if hasattr(from_user, 'wa_id'):
+                        phone = from_user.wa_id  # PyWa User object
+                        contact_name = getattr(from_user, 'name', None)
+                    else:
+                        phone = str(from_user)  # Already a string
+                        contact_name = None
+                else:
+                    phone = None
+                    contact_name = None
                 
                 msg_text = getattr(message, "text", None)
                 msg_type = getattr(message, "type", None)
                 msg_id = getattr(message, "id", None)
                 
+                log.info(f"📱 Extracted phone: {phone}, name: {contact_name}")
+                
                 # Save incoming message to database
-                save_message_to_db(
+                saved_msg = save_message_to_db(
                     db=db,
                     message_id=msg_id,
                     phone=phone,
@@ -124,6 +136,9 @@ def init_wa_client(client):
                     direction="incoming",
                     metadata={"timestamp": str(getattr(message, "timestamp", None))}
                 )
+                
+                if saved_msg:
+                    log.info(f"✅ Message saved with ID: {saved_msg.id}")
                 
                 # Log webhook activity
                 save_webhook_log(
