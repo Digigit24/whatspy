@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
 from routers import chat, campaigns, templates, contacts, groups
+from fastapi.staticfiles import StaticFiles
 
 from pywa import WhatsApp
 
@@ -115,6 +116,7 @@ app.include_router(campaigns.router, prefix="/api", tags=["Campaigns"], dependen
 app.include_router(templates.router, prefix="/api", tags=["Templates"], dependencies=[Depends(require_auth)])
 app.include_router(contacts.router, prefix="/api", tags=["Contacts"], dependencies=[Depends(require_auth)])
 app.include_router(groups.router, prefix="/api", tags=["Groups"], dependencies=[Depends(require_auth)])
+app.mount("/static", StaticFiles(directory="templates"), name="static")
 
 # ────────────────────────────────
 # Public Routes
