@@ -1,35 +1,30 @@
-name: Deploy HMS to EC2
+name: Deploy Whatspy
 
 on:
   push:
-    branches: [ "main" ]   # change if you use another branch
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Decode private key
-        run: |
-          echo "${{ secrets.SSH_KEY_B64 }}" | base64 -d > id_ed25519
-          chmod 600 id_ed25519
-
-      - name: Start ssh-agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          ssh-private-key: |
-            ${{ secrets.SSH_KEY }}    # or use: $(cat id_ed25519)
-
-      - name: Add host to known_hosts (optional)
-        run: |
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Deploy
-        run: |
-          ssh -p "${{ secrets.SSH_PORT }}" ubuntu@${{ secrets.SSH_HOST }} 'bash -lc "
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || '22' }}   # or hardcode '22'
+          key: ${{ secrets.SSH_KEY }}             # <-- pass the PRIVATE key here
+          # If your key has a passphrase:
+          # passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script_stop: true
+          script: |
             set -e
             cd /home/ubuntu/whatspy
             git config --global --add safe.directory /home/ubuntu/whatspy
             ./deploy.sh main
-          "'
