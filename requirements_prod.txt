@@ -1,0 +1,50 @@
+# requirements_prod.txt
+# Production dependencies for Linux server deployment
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# WhatsApp Integration
+pywa==1.0.0
+
+# Authentication & Security
+pyjwt==2.8.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Session Management
+itsdangerous==2.1.2
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# Template Engine
+jinja2==3.1.2
+
+# HTTP Client
+httpx==0.25.1
+requests==2.31.0
+
+# Middleware
+starlette==0.27.0
+
+# Production Server (Linux only)
+gunicorn==21.2.0
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Excel Processing
+openpyxl==3.1.2
+
+# Monitoring (optional but recommended)
+prometheus-client==0.19.0
+
+# Logging (optional but recommended)
+python-json-logger==2.0.7
