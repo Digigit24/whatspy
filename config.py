@@ -67,3 +67,13 @@ SESSION_SECRET_KEY: str = os.getenv("SESSION_SECRET_KEY", "change-this-to-a-rand
 
 # Session settings
 SESSION_MAX_AGE: int = 86400  # 24 hours in seconds
+
+# ────────────────────────────────
+# JWT Configuration (for Django CRM integration)
+# ────────────────────────────────
+JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")  # MUST match Django app's SECRET_KEY
+JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+
+if not JWT_SECRET_KEY:
+    import warnings
+    warnings.warn("JWT_SECRET_KEY not set! JWT authentication will not work.")

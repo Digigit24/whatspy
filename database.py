@@ -31,7 +31,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # ────────────────────────────────
-# Database Models
+# Database Models (with tenant_id support)
 # ────────────────────────────────
 
 class Message(Base):
@@ -39,6 +39,7 @@ class Message(Base):
     __tablename__ = "messages"
     
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
     message_id = Column(String(255), unique=True, index=True, nullable=True)
     phone = Column(String(50), index=True, nullable=False)
     contact_name = Column(String(255), nullable=True)
@@ -46,7 +47,7 @@ class Message(Base):
     message_type = Column(String(50), nullable=True)
     direction = Column(String(20), nullable=False)  # 'incoming' or 'outgoing'
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    meta_data = Column(JSON, nullable=True)  # ⬅️ Changed from 'metadata' to 'meta_data'
+    meta_data = Column(JSON, nullable=True)
     
     def to_dict(self):
         return {
@@ -58,7 +59,8 @@ class Message(Base):
             "type": self.message_type,
             "direction": self.direction,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "metadata": self.meta_data  # ⬅️ Still return as 'metadata' in dict
+            "metadata": self.meta_data,
+            "tenant_id": self.tenant_id
         }
 
 
@@ -67,6 +69,7 @@ class WebhookLog(Base):
     __tablename__ = "webhook_logs"
     
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
     log_type = Column(String(50), index=True)  # 'message', 'status', 'error'
     phone = Column(String(50), nullable=True)
     message_id = Column(String(255), nullable=True)
@@ -85,7 +88,8 @@ class WebhookLog(Base):
             "status": self.status,
             "error": self.error_message,
             "context": self.context,
-            "text": self.raw_data.get("text") if self.raw_data else None
+            "text": self.raw_data.get("text") if self.raw_data else None,
+            "tenant_id": self.tenant_id
         }
 
 
@@ -94,6 +98,7 @@ class Campaign(Base):
     __tablename__ = "campaigns"
     
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
     campaign_id = Column(String(100), unique=True, index=True, nullable=False)
     campaign_name = Column(String(255), nullable=True)
     message_text = Column(Text, nullable=False)
@@ -111,7 +116,8 @@ class Campaign(Base):
             "sent": self.sent_count,
             "failed": self.failed_count,
             "timestamp": self.created_at.isoformat() if self.created_at else None,
-            "results": self.results or []
+            "results": self.results or [],
+            "tenant_id": self.tenant_id
         }
 
 
@@ -120,7 +126,8 @@ class MessageTemplate(Base):
     __tablename__ = "message_templates"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), unique=True, index=True, nullable=False)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
+    name = Column(String(255), index=True, nullable=False)
     content = Column(Text, nullable=False)
     variables = Column(JSON, nullable=True)  # List of variable names
     category = Column(String(100), default="general")
@@ -135,12 +142,13 @@ class MessageTemplate(Base):
             "variables": self.variables or [],
             "category": self.category,
             "usage_count": self.usage_count,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "tenant_id": self.tenant_id
         }
 
 
 class AdminUser(Base):
-    """Store admin credentials"""
+    """Store admin credentials (legacy - keep for backward compatibility)"""
     __tablename__ = "admin_users"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -151,15 +159,13 @@ class AdminUser(Base):
     last_login = Column(DateTime, nullable=True)
 
 
-
-# Add these to database.py after the existing models
-
 class Contact(Base):
     """Store WhatsApp contacts"""
     __tablename__ = "contacts"
     
     id = Column(Integer, primary_key=True, index=True)
-    phone = Column(String(50), unique=True, index=True, nullable=False)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
+    phone = Column(String(50), index=True, nullable=False)
     name = Column(String(255), nullable=True)
     profile_pic_url = Column(String(500), nullable=True)
     status = Column(String(500), nullable=True)
@@ -185,7 +191,8 @@ class Contact(Base):
             "groups": self.groups or [],
             "notes": self.notes,
             "last_seen": self.last_seen.isoformat() if self.last_seen else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "tenant_id": self.tenant_id
         }
 
 
@@ -194,7 +201,8 @@ class Group(Base):
     __tablename__ = "groups"
     
     id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(String(100), unique=True, index=True, nullable=False)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
+    group_id = Column(String(100), index=True, nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     participants = Column(JSON, nullable=True)  # List of phone numbers
@@ -218,7 +226,8 @@ class Group(Base):
             "is_active": self.is_active,
             "participant_count": len(self.participants) if self.participants else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "tenant_id": self.tenant_id
         }
 
 
@@ -227,6 +236,7 @@ class MessageReaction(Base):
     __tablename__ = "message_reactions"
     
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(String(100), index=True, nullable=False)  # ⬅️ NEW
     message_id = Column(String(255), index=True, nullable=False)
     phone = Column(String(50), nullable=False)
     emoji = Column(String(10), nullable=False)
@@ -238,9 +248,9 @@ class MessageReaction(Base):
             "message_id": self.message_id,
             "phone": self.phone,
             "emoji": self.emoji,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "tenant_id": self.tenant_id
         }
-    
 
 
 # ────────────────────────────────
@@ -283,9 +293,9 @@ def get_db_session():
 def test_db_connection() -> bool:
     """Test database connection"""
     try:
-        from sqlalchemy import text  # Import text
+        from sqlalchemy import text
         with get_db_session() as db:
-            db.execute(text("SELECT 1"))  # Wrap in text()
+            db.execute(text("SELECT 1"))
         log.info("✅ Database connection successful")
         return True
     except Exception as e:
