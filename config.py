@@ -53,7 +53,7 @@ DB_NAME = os.getenv("DB_NAME", "whatspy_db")
 if DB_PASSWORD:
     # URL-encode the password to handle special characters
     encoded_password = quote_plus(DB_PASSWORD)
-    DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    DATABASE_URL = f"postgresql://neondb_owner:npg_qAK3fB1JrCXH@ep-bitter-truth-a4padv8v-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 else:
     # Fallback to environment variable
     DATABASE_URL = os.getenv("DATABASE_URL", f"postgresql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
