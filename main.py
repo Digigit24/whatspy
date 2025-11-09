@@ -2,7 +2,7 @@
 import os
 import logging
 from pathlib import Path
-from fastapi import FastAPI, Request, Depends, Form, HTTPException
+from fastapi import FastAPI, Request, Depends, Form, HTTPException, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -100,17 +100,37 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Add CORS middleware for React frontend
+# Add CORS middleware for React frontend (explicit headers + credentials)
 app.add_middleware(
     CORSMiddleware,
+    # Explicitly allow common localhost dev origins
     allow_origins=[
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:5173",  # Vite default port
+        "http://127.0.0.1:5173",
         "https://yourdomain.com",  # Add your production domain
     ],
+    # Also accept any localhost/127.0.0.1 with any port (dev convenience)
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    # Required to support cookies/authorization headers across origins
     allow_credentials=True,
-    allow_methods=["*"],
+    # Explicit methods to ensure preflight passes everywhere
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    # Allow any request headers (covers X-Tenant-Id, X-Tenant-Slug, tenanttoken, etc.)
     allow_headers=["*"],
+    # Headers the browser is allowed to read from responses
+    expose_headers=[
+        "X-Tenant",
+        "X-Tenant-Id",
+        "X-Tenant-Slug",
+        "tenanttoken",
+        "Authorization",
+        "Content-Type",
+        "Set-Cookie",
+    ],
+    # Cache preflight for a day to reduce OPTIONS noise
+    max_age=86400,
 )
 
 # Add session middleware for legacy session-based auth
@@ -174,31 +194,31 @@ app.include_router(
     chat.router, 
     prefix="/api", 
     tags=["Chat"],
-    dependencies=[Depends(require_auth)]  # Session auth for HTML UI
+    dependencies=[Depends(require_auth_flexible)]  # Session auth for HTML UI
 )
 app.include_router(
     campaigns.router, 
     prefix="/api", 
     tags=["Campaigns"],
-    dependencies=[Depends(require_auth)]
+    dependencies=[Depends(require_auth_flexible)]
 )
 app.include_router(
     templates.router, 
     prefix="/api", 
     tags=["Templates"],
-    dependencies=[Depends(require_auth)]
+    dependencies=[Depends(require_auth_flexible)]
 )
 app.include_router(
     contacts.router, 
     prefix="/api", 
     tags=["Contacts"],
-    dependencies=[Depends(require_auth)]
+    dependencies=[Depends(require_auth_flexible)]
 )
 app.include_router(
     groups.router, 
     prefix="/api", 
     tags=["Groups"],
-    dependencies=[Depends(require_auth)]
+    dependencies=[Depends(require_auth_flexible)]
 )
 
 # Mount static files
@@ -208,8 +228,14 @@ app.mount("/static", StaticFiles(directory="templates"), name="static")
 # Public Routes
 # ────────────────────────────────
 
+# CORS preflight handler for any /api/* path (defensive fallback)
+@app.options("/api/{path:path}", include_in_schema=False)
+async def cors_preflight(path: str, request: Request):
+    # Return 204 No Content; CORSMiddleware will attach proper CORS headers
+    return Response(status_code=204)
+
 @app.get(
-    "/healthz", 
+    "/healthz",
     summary="Health Check",
     tags=["System"],
     response_description="System health status"
@@ -398,4 +424,4 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8002)  # Different port from CRM APIs
+    uvicorn.run(app, host="0.0.0.0", port=8100)  # Different port from CRM APIs

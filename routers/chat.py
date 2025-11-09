@@ -551,6 +551,22 @@ def get_conversation(phone: str, db: Session = Depends(get_db)):
         log.exception("get_conversation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ────────────────────────────────
+# Backward-compatibility aliases for old frontend paths
+# Keep until frontend is updated from /api/messages/conversations/* to /api/conversations/*
+# ────────────────────────────────
+@router.get("/messages/conversations", summary="Alias: List all conversations")
+@router.get("/messages/conversations/", summary="Alias: List all conversations (trailing slash)")
+def list_conversations_alias(db: Session = Depends(get_db)):
+    log.warning("Deprecated endpoint hit: /api/messages/conversations - update frontend to /api/conversations")
+    return list_conversations(db=db)
+
+@router.get("/messages/conversations/{phone}", summary="Alias: Get conversation")
+@router.get("/messages/conversations/{phone}/", summary="Alias: Get conversation (trailing slash)")
+def get_conversation_alias(phone: str, db: Session = Depends(get_db)):
+    log.warning("Deprecated endpoint hit: /api/messages/conversations/{phone} - update frontend to /api/conversations/{phone}")
+    return get_conversation(phone=phone, db=db)
+
 
 @router.delete("/conversations/{phone}", summary="Delete conversation")
 def delete_conversation(phone: str, db: Session = Depends(get_db)):
