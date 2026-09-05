@@ -8,3 +8,6 @@ A tiny FastAPI server that connects to WhatsApp via the **PyWa** SDK and echoes 
 - Echo reply for incoming text messages
 
 ## Env Vars (`.env`)
+
+
+<!-- Security scan triggered at 2026-09-05 07:30:44 -->
